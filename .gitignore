@@ -1,0 +1,25 @@
+/.metadata
+/.idea
+/.junie
+/.run
+/.vscode
+/.vs
+/progress
+/cmake-build
+/lib
+.gitkeep
+/bin/win64*
+/bin/lnx64*
+# Credential files for testing CI-pipeline called scripts.
+/.*credentials*
+# Docker .ssh/environment additions.
+/.ssh-environment
+# Debug messages for testing conventinal commit.
+/.version-bump*
+# Test bash scripts.
+/test-*.sh
+/test-*.py
+/.tc-*
+# CMake include file overrulling the cache instead of changing the CMakePresets.json file.
+/user.cmake
+/user.ini
