@@ -393,6 +393,73 @@ function(sf_add_test _Target)
 	endif ()
 endfunction()
 
+##!
+# Installs files to the installation prefix only if they do not already exist
+# at the destination, preventing overwriting existing files/configurations.
+#
+# Mode 1:
+#   Sf_InstallSafe(FILE <oldname1> <newname1> [<oldname2> <newname2> ...] [COMPONENT <component>])
+#   @param FILE Takes pairs of arguments - <oldname> (source path) and <newname>
+#
+# Mode 2:
+#   Sf_InstallSafe(SOURCE <file1> [<file2> ...] DESTINATION <dir> [COMPONENT <component>])
+#   @param SOURCE Takes a list of source files to install.
+#   @param DESTINATION Destination directory.
+#
+# Mode all:
+#   @param COMPONENT Optional component name.
+#
+# Destination path is relative to CMAKE_INSTALL_PREFIX.
+#
+function(sf_install_safe)
+	set(_options "")
+	set(_one_value_args DESTINATION COMPONENT)
+	set(_multi_value_args FILE SOURCE)
+	cmake_parse_arguments(_arg "${_options}" "${_one_value_args}" "${_multi_value_args}" ${ARGN})
+	if (NOT _arg_COMPONENT)
+		set(_arg_COMPONENT "${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME}")
+	endif ()
+
+	# Mode 1: FILE <oldname> <newname> [...]
+	if (_arg_FILE)
+		list(LENGTH _arg_FILE _file_len)
+		math(EXPR _is_even "${_file_len} % 2")
+		if (_file_len EQUAL 0 OR NOT _is_even EQUAL 0)
+			message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}(FILE ...) requires an even number of arguments (pairs of <oldname> <newname>)")
+		endif ()
+		math(EXPR _max_index "${_file_len} - 2")
+		foreach (_index RANGE 0 ${_max_index} 2)
+			list(GET _arg_FILE ${_index} _src_file)
+			math(EXPR _val_index "${_index} + 1")
+			list(GET _arg_FILE ${_val_index} _dest_path)
+			install(CODE "
+  if(NOT EXISTS \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${_dest_path}\")
+   file(COPY_FILE \"${CMAKE_CURRENT_LIST_DIR}/${_src_file}\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/\${_dest_path}\"
+  else()
+    message(STATUS \"Skipping existing file: ${_dest_path}\")
+  endif()
+" COMPONENT "${_arg_COMPONENT}")
+		endforeach ()
+
+		# Mode 2: SOURCE <file>... DESTINATION <dir>
+	elseif (_arg_SOURCE)
+		if (NOT _arg_DESTINATION)
+			message(FATAL_ERROR "${CMAKE_CURRENT_FUNCTION}(SOURCE ...) requires DESTINATION")
+		endif ()
+		foreach (_src_file IN LISTS _arg_SOURCE)
+			get_filename_component(_file_name "${_src_file}" NAME)
+			install(CODE "
+  if(NOT EXISTS \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${_arg_DESTINATION}/${_file_name}\")
+    file(COPY_FILE \"${CMAKE_CURRENT_LIST_DIR}/${_src_file}\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${_arg_DESTINATION}/${_file_name}\")
+  else()
+    message(STATUS \"Skipping existing file: ${_arg_DESTINATION}/${_file_name}\")
+  endif()
+" COMPONENT "${_arg_COMPONENT}")
+		endforeach ()
+	else ()
+		message(FATAL_ERROR "Sf_InstallSafe requires either FILE or SOURCE keyword")
+	endif ()
+endfunction()
 
 ##!
 # Reports information about the CMake and sets compiler general options depending on the selected compiler.
@@ -459,4 +526,3 @@ function(sf_compiler_info)
 		list(POP_BACK CMAKE_MESSAGE_INDENT)
 	endif ()
 endfunction()
-

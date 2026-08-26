@@ -1,12 +1,14 @@
 ##
 ## This file is included in the cmake project configuration.
 ## It prepares stuff for CPack to run its project.
+## File '.sf/SfInstallInclude.cmake' is created by 'project.cmake' when CPack is called.
+## When this repository is used as an external project the cmake install si normally called
+## to copy them to the staging directory.
 ##
-
 install(CODE [[
 ## Hack for allowing ZIP/ARCHIVE generator to avoid absolute file to be created.
 set(SF_ROOT_PREFIX ".")
-include("${CMAKE_CURRENT_LIST_DIR}/.sf/SfInstallInclude.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/.sf/SfInstallInclude.cmake" OPTIONAL)
 ]]
 	COMPONENT "${SF_DEFAULT_COMPONENT_NAME}"
 )
@@ -47,7 +49,7 @@ endif ()
 set(CPACK_SF_INCLUDE_VARS_FILE "${CMAKE_CURRENT_BINARY_DIR}/.sf/SfCPackProjectVars.cmake")
 
 # Pass also the cmake binary build directory using en variable with an 'SF_' prefix.
-set(SF_BINARY_DIR "${CMAKE_BINARY_DIR}")
+set(SF_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
 set(CPACK_PACKAGE_EXECUTABLES)
 set(_ExecTargets)
