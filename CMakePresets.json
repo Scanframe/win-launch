@@ -43,6 +43,10 @@
 					"type": "PATH",
 					"value": "${sourceDir}/bin/pkg"
 				},
+				"SF_BUILD_TESTING": {
+					"type": "BOOL",
+					"value": "OFF"
+				},
 				"SF_COMPILER": {
 					"type": "STRING",
 					"value": ""
@@ -197,7 +201,13 @@
 			"inherits": [
 				".tc-gw",
 				".cfg-win"
-			]
+			],
+			"cacheVariables": {
+				"SF_BUILD_TESTING": {
+					"type": "BOOL",
+					"value": "ON"
+				}
+			}
 		},
 		{
 			"name": "gw-release",
@@ -212,6 +222,10 @@
 				"CMAKE_BUILD_TYPE": {
 					"type": "STRING",
 					"value": "Release"
+				},
+				"SF_BUILD_TESTING": {
+					"type": "BOOL",
+					"value": "ON"
 				}
 			}
 		},
@@ -223,7 +237,13 @@
 			"inherits": [
 				".tc-mingw",
 				".cfg-w64"
-			]
+			],
+			"cacheVariables": {
+				"SF_BUILD_TESTING": {
+					"type": "BOOL",
+					"value": "ON"
+				}
+			}
 		},
 		{
 			"name": "mingw-release",
@@ -238,6 +258,10 @@
 				"CMAKE_BUILD_TYPE": {
 					"type": "STRING",
 					"value": "Release"
+				},
+				"SF_BUILD_TESTING": {
+					"type": "BOOL",
+					"value": "ON"
 				}
 			}
 		},
@@ -251,6 +275,10 @@
 				".cfg-w64"
 			],
 			"cacheVariables": {
+				"SF_BUILD_TESTING": {
+					"type": "BOOL",
+					"value": "ON"
+				}
 			}
 		},
 		{
@@ -266,6 +294,10 @@
 				"CMAKE_BUILD_TYPE": {
 					"type": "STRING",
 					"value": "Release"
+				},
+				"SF_BUILD_TESTING": {
+					"type": "BOOL",
+					"value": "ON"
 				}
 			}
 		}

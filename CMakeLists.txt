@@ -32,7 +32,7 @@ if (NOT APP_VERSION_STR)
 endif ()
 
 if (NOT APP_ICON_PATH)
-	set(APP_ICON_PATH "cmake/res/logo.ico")
+	set(APP_ICON_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/res/logo.ico")
 	sf_check_file_exists("${APP_ICON_PATH}")
 endif ()
 
@@ -86,5 +86,14 @@ install(FILES
 	src/conf/cmd-pass.exe.ini
 	DESTINATION . COMPONENT "${SF_DEFAULT_COMPONENT_NAME}"
 )
+
+if (SF_BUILD_TESTING)
+	# Enable the tests added with add_test.
+	enable_testing()
+	#
+	add_subdirectory(src/tests)
+	# Include CDash dashboard testing module and it sets the BUILD_TESTING to 'ON'.
+	include(CTest)
+endif ()
 
 include(cmake/cpack/prepare.cmake)

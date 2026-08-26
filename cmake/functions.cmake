@@ -350,6 +350,51 @@ function(sf_list_path _Path)
 endfunction()
 
 ##!
+# Calls native add_test() function using start scripts to set the library paths for Windows/Wine and Linux.
+# @param _Target Name of the target.
+# @param _Labels Optional labels for test execution selection.
+#
+function(sf_add_test _Target)
+	# When the first optional argument is given use it to set labels.
+	sf_get_optional_argument(_Labels 0 "${ARGN}")
+	# Invoke a script when cross-compiling which makes normal test debugging not possible which is the case anyway.
+	# Somehow CMAKE_CROSSCOMPILING is not having the correct value at this point so SF_CROSSCOMPILING is used.
+	if (SF_CROSSCOMPILING)
+		# When target is a Windows build.
+		if (WIN32)
+			set(_Script "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/bin/WineExec.sh")
+		else ()
+			# When NOT compiling Windows assume Linux build and use a shell script.
+			set(_Script "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/bin/LinuxExec.sh")
+		endif ()
+		# TODO: Property 'CROSSCOMPILING_EMULATOR' seems not to be working.
+		#set_target_properties(my_exe PROPERTIES CROSSCOMPILING_EMULATOR "/usr/bin/qemu-arm;-L;/usr/arm-linux-gnueabihf")
+		# Add the test using a script setting correct paths for finding dynamic libraries and executing a different architecture.
+		add_test(NAME "${_Target}"
+			# Optional script when cross-compiling.
+			COMMAND ${_Script} "$<TARGET_FILE_NAME:${_Target}>"
+			# Ensure the working directory is its own location.
+			WORKING_DIRECTORY "$<TARGET_FILE_DIR:${_Target}>"
+			COMMAND_EXPAND_LISTS
+		)
+	else ()
+		# Add the test using a script setting correct paths for finding dynamic libraries and executing a different architecture.
+		add_test(NAME "${_Target}"
+			# Optional script when cross-compiling.
+			COMMAND "$<TARGET_FILE_NAME:${_Target}>"
+			# Ensure the working directory is its own location.
+			WORKING_DIRECTORY "$<TARGET_FILE_DIR:${_Target}>"
+			COMMAND_EXPAND_LISTS
+		)
+	endif ()
+	# Test if the argument was passed.
+	if (DEFINED _Labels)
+		set_tests_properties("${_Target}" PROPERTIES LABELS "${_Labels}")
+	endif ()
+endfunction()
+
+
+##!
 # Reports information about the CMake and sets compiler general options depending on the selected compiler.
 #
 function(sf_compiler_info)

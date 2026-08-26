@@ -47,7 +47,8 @@ BOOL resolveExecutablePath(const char* inPath, char* outPath, DWORD outPathSize)
 	}
 
 	/* Ask Windows for the final, symlink-resolved path. This comes back in the extended-length
-	 * "\\?\" form (e.g. "\\?\C:\real\path\app.exe"), which we strip below for a normal-looking path. */
+	 * "\\?\" form (e.g. "\\?\C:\real\path\app.exe", or "\\?\UNC\server\share\..." for network
+	 * shares), which we normalize below into an ordinary-looking path. */
 	char rawPath[MAX_PATH + 8];
 	DWORD rawLen = GetFinalPathNameByHandleA(hFile, rawPath, sizeof(rawPath), FILE_NAME_NORMALIZED);
 	CloseHandle(hFile);
@@ -57,10 +58,22 @@ BOOL resolveExecutablePath(const char* inPath, char* outPath, DWORD outPathSize)
 		return FALSE;
 	}
 
-	/* Strip the "\\?\" extended-path prefix, if present, so the rest of the program can keep
-	 * treating this as an ordinary path string. */
+	/* Strip the "\\?\" extended-path prefix. Network shares come back as "\\?\UNC\server\share",
+	 * which needs to become "\\server\share" rather than the literal "UNC\server\share" you'd get
+	 * from just chopping off "\\?\" - so that case is handled separately. */
 	const char* resolved = rawPath;
-	if (strncmp(resolved, "\\\\?\\", 4) == 0)
+	char unc[MAX_PATH + 8];
+
+	if (strncmp(resolved, "\\\\?\\UNC\\", 8) == 0)
+	{
+		/* "\\?\UNC\server\share..." -> "\\server\share..." */
+		if (_snprintf_s(unc, sizeof(unc), _TRUNCATE, "\\\\%s", resolved + 8) < 0)
+		{
+			return FALSE;
+		}
+		resolved = unc;
+	}
+	else if (strncmp(resolved, "\\\\?\\", 4) == 0)
 	{
 		resolved += 4;
 	}
@@ -94,7 +107,7 @@ BOOL getExeDirectory(const char* inPath, char* outDir, DWORD outDirSize)
 
 	if (lastSlash != NULL)
 	{
-		size_t dirLen = (size_t)(lastSlash - inPath);
+		size_t dirLen = (size_t) (lastSlash - inPath);
 		/* Check for drive root like "C:\" */
 		if (dirLen == 2 && inPath[1] == ':')
 		{
@@ -132,16 +145,13 @@ BOOL isAbsolutePath(const char* path)
 	}
 
 	/* Drive letter path: e.g. C:\ or C:/ */
-	if (((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z')) &&
-	    path[1] == ':' &&
-	    (path[2] == '\\' || path[2] == '/'))
+	if (((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z')) && path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
 	{
 		return TRUE;
 	}
 
 	/* UNC path: e.g. \\server\share or //server/share */
-	if ((path[0] == '\\' || path[0] == '/') &&
-	    (path[1] == '\\' || path[1] == '/'))
+	if ((path[0] == '\\' || path[0] == '/') && (path[1] == '\\' || path[1] == '/'))
 	{
 		return TRUE;
 	}
@@ -455,7 +465,7 @@ void applyEnvSettings(const char* iniPath, const char* sectionName)
 		const char* eq = strchr(entry, '=');
 		if (eq != NULL && eq != entry)
 		{
-			size_t keyLen = (size_t)(eq - entry);
+			size_t keyLen = (size_t) (eq - entry);
 			char key[4096];
 			if (keyLen < sizeof(key))
 			{
@@ -498,7 +508,7 @@ int executeProcess(char* cmdLine, const char* workDir, int timeoutSeconds)
 	if (timeoutSeconds > 0)
 	{
 		/* Convert the configured timeout from seconds to milliseconds for WaitForSingleObject. */
-		DWORD timeoutMs = (DWORD)timeoutSeconds * 1000;
+		DWORD timeoutMs = (DWORD) timeoutSeconds * 1000;
 		waitResult = WaitForSingleObject(pi.hProcess, timeoutMs);
 
 		if (waitResult == WAIT_TIMEOUT)
@@ -524,7 +534,7 @@ int executeProcess(char* cmdLine, const char* workDir, int timeoutSeconds)
 	CloseHandle(pi.hThread);
 
 	/* Return the child's exit code */
-	return (int)exitCode;
+	return (int) exitCode;
 }
 
 /* Reads the debug level from [OPTIONS] (or alias [OPTION]) section. */
@@ -570,9 +580,11 @@ int resolveTimeout(const char* iniPath, const char* symlinkName)
 }
 
 /* Parses and executes an .ini profile configuration. */
-int runIniProfile(const char* iniPath, const char* exeDir, int argc, char* argv[],
-                  const char* pathSection, const char* envSection, const char* runSection,
-                  int timeoutSeconds, int debugLevel)
+int runIniProfile(
+	const char* iniPath, const char* exeDir, int argc, char* argv[],//
+	const char* pathSection, const char* envSection, const char* runSection, int timeoutSeconds,
+	int debugLevel
+)
 {
 	if (debugLevel >= 1)
 	{
@@ -637,7 +649,7 @@ int runIniProfile(const char* iniPath, const char* exeDir, int argc, char* argv[
 	char cmdLine[32768];
 	int written = snprintf(cmdLine, sizeof(cmdLine), "\"%s\"", targetExeResolved);
 
-	if (prependArgs[0] != '\0' && written > 0 && written < (int)sizeof(cmdLine))
+	if (prependArgs[0] != '\0' && written > 0 && written < (int) sizeof(cmdLine))
 	{
 		int appended = snprintf(cmdLine + written, sizeof(cmdLine) - written, " %s", prependArgs);
 		if (appended > 0)
@@ -646,7 +658,7 @@ int runIniProfile(const char* iniPath, const char* exeDir, int argc, char* argv[
 		}
 	}
 
-	for (int i = 1; i < argc && written > 0 && written < (int)sizeof(cmdLine); ++i)
+	for (int i = 1; i < argc && written > 0 && written < (int) sizeof(cmdLine); ++i)
 	{
 		int appended = snprintf(cmdLine + written, sizeof(cmdLine) - written, " %s", argv[i]);
 		if (appended > 0)
@@ -655,7 +667,7 @@ int runIniProfile(const char* iniPath, const char* exeDir, int argc, char* argv[
 		}
 	}
 
-	if (appendArgs[0] != '\0' && written > 0 && written < (int)sizeof(cmdLine))
+	if (appendArgs[0] != '\0' && written > 0 && written < (int) sizeof(cmdLine))
 	{
 		int appended = snprintf(cmdLine + written, sizeof(cmdLine) - written, " %s", appendArgs);
 		if (appended > 0)
@@ -673,7 +685,7 @@ int runIniProfile(const char* iniPath, const char* exeDir, int argc, char* argv[
 	return ret;
 }
 
-int main(int argc, char* argv[])
+int main_entry(int argc, char* argv[])
 {
 	/* Get executable path as it was invoked (may be a symlink) */
 	char exePath[MAX_PATH];
@@ -732,7 +744,7 @@ int main(int argc, char* argv[])
 		char cmdLine[32768];
 		int written = snprintf(cmdLine, sizeof(cmdLine), "cmd.exe /c \"%s\"", scriptPath);
 
-		for (int i = 1; i < argc && written > 0 && written < (int)sizeof(cmdLine); ++i)
+		for (int i = 1; i < argc && written > 0 && written < (int) sizeof(cmdLine); ++i)
 		{
 			/* Append any extra arguments passed to this wrapper, forwarding them to the script. */
 			int appended = snprintf(cmdLine + written, sizeof(cmdLine) - written, " %s", argv[i]);
@@ -756,3 +768,10 @@ int main(int argc, char* argv[])
 	fprintf(stderr, "Error: Companion file not found: %s or %s\n", iniPath, scriptPath);
 	return 1;
 }
+
+#if !defined SF_NO_MAIN
+int main(int argc, char* argv[])
+{
+	return main_entry(argc, argv);
+}
+#endif
