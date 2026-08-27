@@ -80,11 +80,20 @@ install(TARGETS ${_targets}
 	LIBRARY DESTINATION . COMPONENT "${SF_DEFAULT_COMPONENT_NAME}"
 )
 
+#[[
 sf_install_safe(
 	SOURCE
 	src/conf/cmd-pass.exe.cmd
 	src/conf/cmd-pass.exe.ini
 	DESTINATION .
+	COMPONENT "${SF_DEFAULT_COMPONENT_NAME}"
+)
+]]
+
+sf_install_safe(
+	FILE
+	src/conf/cmd-pass.exe.cmd ./cmd-pass.exe.cmd-disabled
+	src/conf/cmd-pass.exe.ini ./cmd-pass.exe.ini
 	COMPONENT "${SF_DEFAULT_COMPONENT_NAME}"
 )
 

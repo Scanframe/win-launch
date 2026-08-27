@@ -434,7 +434,7 @@ function(sf_install_safe)
 			list(GET _arg_FILE ${_val_index} _dest_path)
 			install(CODE "
   if(NOT EXISTS \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${_dest_path}\")
-   file(COPY_FILE \"${CMAKE_CURRENT_LIST_DIR}/${_src_file}\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/\${_dest_path}\"
+   file(COPY_FILE \"${CMAKE_CURRENT_LIST_DIR}/${_src_file}\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${_dest_path}\")
   else()
     message(STATUS \"Skipping existing file: ${_dest_path}\")
   endif()

@@ -84,6 +84,11 @@ foreach (_ExecTarget IN LISTS _ExecTargets)
 	get_target_property(_OutputSuffix "${_ExecTarget}" SUFFIX)
 	# Each entry is is a combination of 2 items in the list executable first and then the shortcut name.
 	list(APPEND CPACK_PACKAGE_EXECUTABLES "${CPACK_PACKAGE_INSTALL_DIRECTORY}/${CMAKE_PROJECT_NAME}/${_OutputName}${_OutputSuffix}" "${_OutputName}")
+	if (_ExecTarget STREQUAL "cmd-pass")
+		foreach (_alias "np++" "ctl-panel")
+		list(APPEND CPACK_PACKAGE_EXECUTABLES "${CPACK_PACKAGE_INSTALL_DIRECTORY}/${CMAKE_PROJECT_NAME}/${_OutputName}${_OutputSuffix}" "${_alias}")
+		endforeach ()
+	endif ()
 endforeach ()
 
 # Get date in YYYY-MM-DD format (e.g., 2026-08-23)

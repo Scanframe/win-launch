@@ -2,15 +2,14 @@
 
 ## Overview
 
-This is a modern cross-platform build environment test project with CMake for Docker, Wine, native Linux and native
-Windows.  
-It is used to test the build environment for C++ projects. Qt6 only uses up to C++17. License: GNU General Public
-License v3.0 (GPL-3.0).
+This is a modern cross-platform build environment test project with CMake for Docker, Wine, native
+Linux and native Windows.
 
 ## Commands
 
-All targets are built from the command line using the single command `../../../../build.py`. When run without arguments,
-it will show the help to build using a given toolchain and optional target.
+All targets are built from the command line using the single command `build.py`.  
+When run without arguments, it will show the help to build using a given toolchain and optional
+target.
 
 ### Build the Project
 
@@ -19,7 +18,7 @@ To build the complete 'Debug' project.
 ```bash
 ./build.py --build gw-debug
 # Or only a specific target.
-./build.py --build gw-debug --target t_devops-shared-test-catch 
+./build.py --build gw-debug --target cmd-pass 
 ```
 
 ### Running Unit Tests
@@ -27,17 +26,9 @@ To build the complete 'Debug' project.
 The command to run CTest on the project executing only tests using a regex pattern.
 
 ```bash
-./build.py --test gw-debug --test-regex "catch$"
+./build.py --test gw-debug --test-regex "-test$"
 # Short version. 
-./build.py -t gw-debug -R "catch$"
-```
-
-The command combining a build and test of a specific target using a regex pattern.
-
-```bash
-./build.py --build --test gw-debug --target t_devops-shared-test-catch --test-regex "catch$"
-# Short version. 
-./build.py -bt gw-debug -n t_devops-shared-test-catch -R "catch$"
+./build.py -t gw-debug -R "-test$"
 ```
 
 The command to get a project overview including the names of the tests available.
@@ -46,17 +37,6 @@ The command to get a project overview including the names of the tests available
 ./build.py --info gw-debug
 ./build.py -i gw-debug
 ```
-
-## Boundaries
-
-Follow these operational safety guardrails:
-
-- **Always do**: Use smart pointers (`std::unique_ptr`, `std::shared_ptr`) for general resource management.
-- **Always do**: Adhere strictly to RAII practices.
-- **Never do**: Do not bypass explicit `noexcept` specifications on move constructors.
-- **Qt Ownership**: For `QObject` derived classes, prefer parent-child ownership over smart pointers where applicable.
-- **Logging**: Use `qCInfo`, `qCDebug`, `qCWarning`, `qCCritical` with the centralized `logCategory()` defined in
-  `logging.h` when used.
 
 ## Code Style
 
@@ -75,7 +55,8 @@ Match the constraints configured and set in the file [`.clang-format`](.clang-fo
 
 ### Naming Conventions
 
-Follow the described code conventions from document [`doc/code-conventions.md`](doc/code-conventions.md).  
+Follow the described code conventions from document [
+`doc/code-conventions.md`](doc/code-conventions.md).  
 Key points:
 
 - **Classes/Structs**: PascalCase.
@@ -85,35 +66,38 @@ Key points:
 
 ## Testing Strategy
 
-- **Rule**: Both testing frameworks **Catch2** and **GoogleTest** are the only allowed frameworks and preferably in that
-  order.
+- **Rule**: Both testing frameworks **Catch2** and **GoogleTest** are the only allowed frameworks
+  and preferably in that order.
 - **Rule**: Core, headless and backend libraries have a `tests/` directory.
 
 ## Commit Style
 
+Use tabs for indentation where a tab is size 2.
+
 ### Message
 
 Conventional commits are preferred as described in the next chapter.  
-Files not part of the repository should be excluded from commit messages, which means ignore untracked files.  
+Files not part of the repository should be excluded from commit messages, which means ignore
+untracked files.  
 Use bullet points for commit messages to make them more readable and concise.  
 Use backticks when referencing a path in one of the bullet points.
 
 ### AI Chat Response
 
 When assembling a commit message, include a separate "Locations" section in the AI response.  
-For every commit-message bullet, list the relevant source location (s) as clickable Markdown links using project
-relative file paths when possible and optional line numbers.  
+For every commit-message bullet, list the relevant source location (s) as clickable Markdown links
+using project relative file paths when possible and optional line numbers.  
 These locations are supporting context and should not be included in the commit message itself.
 
 # Semantic Versioning
 
 ## Conventional Commits Auto Version Bumping
 
-To automatically bump the version using conventional commits, the [build.py](../bin/build.py) script provides a
-subcommand for it.
+To automatically bump the version using conventional commits, the [build.py](../bin/build.py) script
+provides a subcommand for it.
 
-The script analyzes the commit messages up-to a certain commit and computes a new semantic version. At the same time
-generates release-notes for this version.
+The script analyzes the commit messages up-to a certain commit and computes a new semantic version.
+At the same time generates release-notes for this version.
 
 ```bash
 # List all 
@@ -122,7 +106,8 @@ generates release-notes for this version.
 
 ## Commit Message Format
 
-The Conventional Commit format is based on [ConventionalCommits.Orgte ](https://www.conventionalcommits.org/en/v1.0.0/)
+The Conventional Commit format is based
+on [ConventionalCommits.Orgte ](https://www.conventionalcommits.org/en/v1.0.0/)
 and is as follows where the blank lines are separators between description, body and footer.
 
 ```
@@ -135,7 +120,8 @@ and is as follows where the blank lines are separators between description, body
 
 ### A Full Example
 
-Below is a full example of a commit message where the body has multiple paragraphs and the footers are identifiable.
+Below is a full example of a commit message where the body has multiple paragraphs and the footers
+are identifiable.
 
 ```
 feat(compiler): add strict null pointer checking optimizations
@@ -172,14 +158,15 @@ The **header** and the first mandatory line of the commit message has a format a
 └─⫸ Commit Type: build|ci|chore|docs|feat|fix|perf|refactor|style|test|revert
 ```
 
-The commit message should be written in an imperative mood, which means it should describe the action that the commit
-will perform, rather than the action that has been performed. For example, "Fix bug" rather than "Fixed bug".
+The commit message should be written in an imperative mood, which means it should describe the
+action that the commit will perform, rather than the action that has been performed. For example,
+"Fix bug" rather than "Fixed bug".
 
 ### The Body (Optional)
 
-The body provides a detailed description of the change. The Context: You may use past tense to describe the historical
-problem or the old state of the codebase. The Solution: Use the imperative mood when describing the specific actions the
-new code executes to resolve the issue.
+The body provides a detailed description of the change. The Context: You may use past tense to
+describe the historical problem or the old state of the codebase. The Solution: Use the imperative
+mood when describing the specific actions the new code executes to resolve the issue.
 
 ### The Footer (s) (Optional)
 
@@ -220,7 +207,8 @@ See-also: https://github.com
 
 > **Note:**
 >
-> While some types don't directly affect version numbers, they can still be valuable for understanding
+> While some types don't directly affect version numbers, they can still be valuable for
+> understanding
 > the project history and making informed decisions about semantic versioning.  
 > The by the standard mentioned special footer `BREAKING CHANGE:` is not honored and is replaced the
 > header containing the `!` exclamation-mark to cause a major version bump.
@@ -228,33 +216,34 @@ See-also: https://github.com
 ## Examples of Message Headers
 
 1. `feat(auth)!: Implement a new authentication system.`  
-   This message introduces a new feature (`feat`) that likely has backward-incompatibilities (`!`) and might require a
-   major version bump.
+   This message introduces a new feature (`feat`) that likely has backward-incompatibilities (`!`)
+   and might require a major version bump.
 2. `fix: Update dependency versions to address security vulnerabilities.`  
-   This message fixes a bug (`fix`) by updating dependencies, but doesn't introduce new features or breaking changes, so
-   the version should likely remain unchanged.
+   This message fixes a bug (`fix`) by updating dependencies, but doesn't introduce new features or
+   breaking changes, so the version should likely remain unchanged.
 3. `build(deps): Upgrade build tools to the latest version.`  
-   This message clarifies the scope (`build(deps)`) of changes affecting build dependencies and doesn't directly impact
-   the project's functionality, so versioning is likely unaffected.
+   This message clarifies the scope (`build(deps)`) of changes affecting build dependencies and
+   doesn't directly impact the project's functionality, so versioning is likely unaffected.
 4. `chore: Update project documentation.`  
-   This message reflects maintenance changes (`chore`) to documentation and doesn't introduce new features or bugs, so
-   the version likely stays the same.
+   This message reflects maintenance changes (`chore`) to documentation and doesn't introduce new
+   features or bugs, so the version likely stays the same.
 5. `ci: Configure continuous integration for merge requests.`  
-   This message describes changes to the CI process (`ci`), which typically don't affect the project's public version,
-   so the versioning remains unchanged.
+   This message describes changes to the CI process (`ci`), which typically don't affect the
+   project's public version, so the versioning remains unchanged.
 6. `docs: Add a new tutorial for beginners.`  
-   Similar to updating project documentation (`chore`), adding a tutorial (`docs`) doesn't impact functionality and
-   likely does not warrant a version change.
+   Similar to updating project documentation (`chore`), adding a tutorial (`docs`) doesn't impact
+   functionality and likely does not warrant a version change.
 7. `style: Fix code formatting issues.`  
-   This message addresses code style (`style`), which doesn't introduce new features or fix bugs, so the version
-   shouldn't change.
+   This message addresses code style (`style`), which doesn't introduce new features or fix bugs, so
+   the version shouldn't change.
 8. `refactor: Improve code readability and maintainability.`  
-   While refactoring code (`refactor`) doesn't directly introduce new features or fix bugs, significant improvements
-   might influence a minor version bump, but it depends on project specifics.
+   While refactoring code (`refactor`) doesn't directly introduce new features or fix bugs,
+   significant improvements might influence a minor version bump, but it depends on project
+   specifics.
 9. `perf: Optimize performance for large datasets.`  
-   Similar to refactoring, performance improvements (`perf`) might warrant a minor version bump for significant
-   optimizations, but the decision depends on project context.
+   Similar to refactoring, performance improvements (`perf`) might warrant a minor version bump for
+   significant optimizations, but the decision depends on project context.
 10. `test(auth): Add unit tests for a new feature.`  
-    Adding tests (`test`) is a good practice and doesn't affect the project's functionality or introduce breaking
-    changes, so the version likely remains unchanged.
+    Adding tests (`test`) is a good practice and doesn't affect the project's functionality or
+    introduce breaking changes, so the version likely remains unchanged.
 

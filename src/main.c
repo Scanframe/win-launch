@@ -1,33 +1,6 @@
-/**
- * @file cmd-pass.c
- * @brief Utility to execute a companion Windows INI profile (.ini) or command (.cmd) script with I/O passthrough and timeout management.
- *
- * When a companion INI file named identically to the executable (plus a .ini extension) is found,
- * it is parsed using the Win32 Private Profile API. The wrapper configures the process PATH ([PATH] section),
- * sets custom environment variables ([ENV] section), and executes the target program ([RUN] section),
- * taking precedence over any .cmd script.
- * When the .ini file is not present, it falls back to executing a companion command script (.cmd).
- *
- * It connects the child process directly to this process's real console handles (rather than intermediary pipes)
- * so that interactive console behavior - such as cls, colors, and native input echo - works directly.
- * It also enforces execution limits based on the [MAX-TIME] configuration in the companion INI file.
- *
- * This is plain C (no C++ runtime at all): only the Win32 API and the C standard library are used,
- * so the statically-linked binary stays minimal - no iostream, no filesystem, no exceptions/RTTI,
- * no C++ runtime startup code.
- *
- * Compilation:
- * @code
- * cl /std:c17 cmd-pass.c
- * x86_64-w64-mingw32-gcc -std=c17 -O2 -static -o cmd-pass.exe cmd-pass.c
- * x86_64-w64-mingw32-gcc -std=c17 -Os -s -static -ffunction-sections -fdata-sections -Wl,--gc-sections -o cmd-pass.exe cmd-pass.c
- * @endcode
- */
+#include "main.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <windows.h>
+static int debugLevel = 0;
 
 /* Resolves the real, final path of an executable, following symlinks and other reparse points.
  * GetModuleFileNameA alone reports the path as it was invoked, which for a symlinked executable
@@ -169,7 +142,8 @@ BOOL resolvePath(const char* exeDir, const char* inPath, char* outPath, DWORD ou
 	}
 
 	char combined[MAX_PATH * 2];
-	if (isAbsolutePath(inPath))
+	// A path starting with @ is a special case, do not resolve it.
+	if (isAbsolutePath(inPath) && inPath[0] != '@')
 	{
 		if (GetFullPathNameA(inPath, outPathSize, outPath, NULL) == 0)
 		{
@@ -444,6 +418,22 @@ void applyPathSettings(const char* iniPath, const char* exeDir, const char* sect
 	}
 }
 
+/* Remove quotes at the beginning and the end when both exist. */
+void removeMatchingQuotes(char* str)
+{
+	if (str == NULL)
+		return;
+	size_t len = strlen(str);
+	// Check if the string has at least 2 characters and starts/ends with a double quote
+	if (len >= 2 && str[0] == '"' && str[len - 1] == '"')
+	{
+		// Shift the string left by 1 character to overwrite the leading quote
+		memmove(str, str + 1, len - 1);
+		// Place the null terminator where the trailing quote used to be
+		str[len - 2] = '\0';
+	}
+}
+
 /* Reads the environment section of the ini file and sets environment variables. */
 void applyEnvSettings(const char* iniPath, const char* sectionName)
 {
@@ -462,6 +452,7 @@ void applyEnvSettings(const char* iniPath, const char* sectionName)
 	const char* entry = buffer;
 	while (*entry != '\0')
 	{
+		char exp_buf[32768];
 		const char* eq = strchr(entry, '=');
 		if (eq != NULL && eq != entry)
 		{
@@ -472,7 +463,20 @@ void applyEnvSettings(const char* iniPath, const char* sectionName)
 				memcpy(key, entry, keyLen);
 				key[keyLen] = '\0';
 				const char* val = eq + 1;
-				SetEnvironmentVariableA(key, val);
+
+				if (debugLevel >= 1)
+					fprintf(stderr, "Expanding (%s): %s\n", key, val);
+
+				if (ExpandEnvironmentStringsA(val, exp_buf, sizeof(exp_buf)) == 0)
+					SetEnvironmentVariableA(key, val);
+				else
+				{
+					removeMatchingQuotes(exp_buf);
+					SetEnvironmentVariableA(key, exp_buf);
+				}
+
+				if (debugLevel >= 1)
+					fprintf(stderr, "Expanded (%s): %s\n", key, exp_buf);
 			}
 		}
 		entry += strlen(entry) + 1;
@@ -538,18 +542,9 @@ int executeProcess(char* cmdLine, const char* workDir, int timeoutSeconds)
 }
 
 /* Reads the debug level from [OPTIONS] (or alias [OPTION]) section. */
-int resolveDebugLevel(const char* iniPath)
+void resolveDebugLevel(const char* iniPath)
 {
-	int debugLevel = GetPrivateProfileIntA("OPTIONS", "debug-level", -1, iniPath);
-	if (debugLevel < 0)
-	{
-		debugLevel = GetPrivateProfileIntA("OPTION", "debug-level", 0, iniPath);
-	}
-	if (debugLevel < 0)
-	{
-		debugLevel = 0;
-	}
-	return debugLevel;
+	debugLevel = (int) GetPrivateProfileIntA("OPTIONS", "debug-level", -1, iniPath);
 }
 
 /* Reads timeout configuration from [MAX-TIME] section.
@@ -557,7 +552,7 @@ int resolveDebugLevel(const char* iniPath)
  * If symlinkName is non-empty, checks [MAX-TIME] for symlinkName override. */
 int resolveTimeout(const char* iniPath, const char* symlinkName)
 {
-	int timeoutSeconds = GetPrivateProfileIntA("MAX-TIME", "@", 0, iniPath);
+	unsigned timeoutSeconds = GetPrivateProfileIntA("MAX-TIME", "@", 0, iniPath);
 	if (timeoutSeconds < 0)
 	{
 		timeoutSeconds = 0;
@@ -575,15 +570,13 @@ int resolveTimeout(const char* iniPath, const char* symlinkName)
 			}
 		}
 	}
-
 	return timeoutSeconds;
 }
 
 /* Parses and executes an .ini profile configuration. */
 int runIniProfile(
 	const char* iniPath, const char* exeDir, int argc, char* argv[],//
-	const char* pathSection, const char* envSection, const char* runSection, int timeoutSeconds,
-	int debugLevel
+	const char* pathSection, const char* envSection, const char* runSection, int timeoutSeconds
 )
 {
 	if (debugLevel >= 1)
@@ -726,11 +719,11 @@ int main_entry(int argc, char* argv[])
 		resolveSectionName(iniPath, "RUN", activeSymlink, runSection, sizeof(runSection));
 
 		/* Read debug-level and timeout configuration from INI */
-		int debugLevel = resolveDebugLevel(iniPath);
+		resolveDebugLevel(iniPath);
 		int timeoutSeconds = resolveTimeout(iniPath, activeSymlink);
 
 		/* INI profile exists: execute target program according to INI settings (cmd file ignored) */
-		return runIniProfile(iniPath, exeDir, argc, argv, pathSection, envSection, runSection, timeoutSeconds, debugLevel);
+		return runIniProfile(iniPath, exeDir, argc, argv, pathSection, envSection, runSection, timeoutSeconds);
 	}
 
 	/* Fall back to companion command script: <effectiveExePath>.cmd */
