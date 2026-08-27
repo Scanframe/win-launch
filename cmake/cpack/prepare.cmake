@@ -75,6 +75,7 @@ set(CPACK_PACKAGE_EXECUTABLES)
 foreach (_ExecTarget IN LISTS _ExecTargets)
 	sf_get_target_output_path("${_ExecTarget}" _OutputPath)
 	get_target_property(_OutputName "${_ExecTarget}" OUTPUT_NAME)
+	get_target_property(_OutputDir ${_ExecTarget} RUNTIME_OUTPUT_DIRECTORY)
 	# Skip this file when output name is not set.
 	if (NOT _OutputName)
 		message(STATUS "Skipping target: ${_ExecTarget}")
@@ -86,7 +87,12 @@ foreach (_ExecTarget IN LISTS _ExecTargets)
 	list(APPEND CPACK_PACKAGE_EXECUTABLES "${CPACK_PACKAGE_INSTALL_DIRECTORY}/${CMAKE_PROJECT_NAME}/${_OutputName}${_OutputSuffix}" "${_OutputName}")
 	if (_ExecTarget STREQUAL "cmd-pass")
 		foreach (_alias "np++" "ctl-panel")
-		list(APPEND CPACK_PACKAGE_EXECUTABLES "${CPACK_PACKAGE_INSTALL_DIRECTORY}/${CMAKE_PROJECT_NAME}/${_OutputName}${_OutputSuffix}" "${_alias}")
+			install(PROGRAMS "$<TARGET_FILE:${_ExecTarget}>"
+				DESTINATION .
+				RENAME "${_alias}${_OutputSuffix}"
+				COMPONENT "${SF_DEFAULT_COMPONENT_NAME}"
+			)
+			list(APPEND CPACK_PACKAGE_EXECUTABLES "${CPACK_PACKAGE_INSTALL_DIRECTORY}/${CMAKE_PROJECT_NAME}/${_alias}${_OutputSuffix}" "${_alias}")
 		endforeach ()
 	endif ()
 endforeach ()
@@ -97,7 +103,7 @@ string(TIMESTAMP _current_date "%Y-%m-%d")
 set(SF_ZIP_MANIFEST_FILE "${CMAKE_CURRENT_BINARY_DIR}/.sf/winget/zip-manifest.yml")
 # Duplicate quotes to escape them.
 string(REPLACE "'" "''" _description "${CMAKE_PROJECT_DESCRIPTION}")
-file(WRITE "${SF_ZIP_MANIFEST_FILE}" "# yaml-language-server: $schema=https://aka.ms/winget-manifest.singleton.1.6.0.schema.json
+file(WRITE "${SF_ZIP_MANIFEST_FILE}" "# yaml-language-server: $schema=https://aka.ms/winget-manifest.singleton.1.12.0.schema.json
 ManifestVersion: 1.12.0
 Publisher: '${SF_PROVIDER_NAME}'
 Author: '${SF_PROVIDER_NAME}'
