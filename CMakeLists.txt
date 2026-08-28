@@ -84,12 +84,19 @@ sf_install_safe(
 	FILE
 	src/conf/cmd-pass.exe.cmd ./cmd-pass.exe.cmd-disabled
 	src/conf/cmd-pass.exe.ini ./cmd-pass.exe.ini
-	src/conf/np++.exe.ini ./np++.exe.ini
-	src/conf/ctl-panel.exe.ini ./ctl-panel.exe.ini
 	COMPONENT "${SF_DEFAULT_COMPONENT_NAME}"
 )
-
+if (SF_INCLUDE_SAMPLES)
+	sf_install_safe(
+		FILE
+		src/conf/np++.exe.ini ./np++.exe.ini
+		src/conf/ctl-panel.exe.ini ./ctl-panel.exe.ini
+		COMPONENT "${SF_DEFAULT_COMPONENT_NAME}"
+	)
+endif ()
 if (SF_BUILD_TESTING)
+	# Prevents Catch2 from adding targets.
+	set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 	# Enable the tests added with add_test.
 	enable_testing()
 	#

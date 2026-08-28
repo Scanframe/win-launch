@@ -1,4 +1,6 @@
-# cmd-pass: High-Performance, Zero-Dependency Native Windows Launcher & Environment Wrapper
+# Windows Launcher (cmd-pass)
+
+High-Performance, Zero-Dependency Native Windows Launcher & Environment Wrapper.
 
 > **Seamless process wrapping, dynamic environment injection, and execution timeout control — packaged into a single, lightning-fast native binary.**
 
@@ -6,7 +8,7 @@
 
 ## 🚀 Overview
 
-**`cmd-pass`** is a ultra-lightweight, zero-dependency C native launcher for Windows designed for developers, maintainers, and DevOps engineers. It acts as a transparent execution wrapper around your binaries or scripts, giving you granular control over environment variables, system `PATH` modifications, working directories, command-line argument injection, and execution timeouts—all without requiring complex runtime dependencies.
+**`cmd-pass`** is an ultra-lightweight, zero-dependency C native launcher for Windows designed for developers, maintainers, and DevOps engineers. It acts as a transparent execution wrapper around your binaries or scripts, giving you granular control over environment variables, system `PATH` modifications, working directories, command-line argument injection, and execution timeouts—all without requiring complex runtime dependencies.
 
 Whether you need to ship portable software packages, enforce execution limits in CI/CD runners, or map multiple environment profiles via symlinks, `cmd-pass` delivers rock-solid performance with virtually zero footprint.
 

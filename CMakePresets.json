@@ -47,6 +47,10 @@
 					"type": "BOOL",
 					"value": "OFF"
 				},
+				"SF_INCLUDE_SAMPLES": {
+					"type": "BOOL",
+					"value": "ON"
+				},
 				"SF_COMPILER": {
 					"type": "STRING",
 					"value": ""

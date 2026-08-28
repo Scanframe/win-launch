@@ -288,6 +288,29 @@ function(sf_get_all_targets _result _dir _inc_deps)
 endfunction()
 
 ##!
+# Get all added tests in all subdirectories.
+#  @param _result The list containing all found targets
+#  @param _dir Root directory to start looking from
+#  @param _inc_deps Include dependencies TRUE or FALSE.
+#
+function(sf_get_all_tests _result _dir _inc_deps)
+	# Get the length of the name to skip.
+	string(LENGTH "${FETCHCONTENT_BASE_DIR}" _length)
+	get_property(_subdirs DIRECTORY "${_dir}" PROPERTY SUBDIRECTORIES)
+	foreach (_subdir IN LISTS _subdirs)
+		string(SUBSTRING "${_subdir}" 0 ${_length} _tmp)
+		if (NOT _inc_deps AND _tmp STREQUAL FETCHCONTENT_BASE_DIR)
+			#message(NOTICE "Skipping: ${_subdir}")
+			continue()
+		endif ()
+		sf_get_all_tests(${_result} "${_subdir}" ${_inc_deps})
+	endforeach ()
+	get_directory_property(_sub_tests DIRECTORY "${_dir}" TESTS)
+	set(${_result} ${${_result}} ${_sub_tests} PARENT_SCOPE)
+endfunction()
+
+
+##!
 # Gets the safe filename version of the current or passed architecture.
 # @param _OutVar Resulting architecture name.
 # @param _Arch  Optional architecture string.

@@ -51,16 +51,20 @@ set(CPACK_SF_INCLUDE_VARS_FILE "${CMAKE_CURRENT_BINARY_DIR}/.sf/SfCPackProjectVa
 # Pass also the cmake binary build directory using en variable with an 'SF_' prefix.
 set(SF_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
-set(CPACK_PACKAGE_EXECUTABLES)
 set(_ExecTargets)
 
 sf_get_all_targets(_Targets "${CMAKE_SOURCE_DIR}" TRUE)
+message("TARGETS: ${_Targets}")
+sf_get_all_tests(_Tests "${CMAKE_SOURCE_DIR}" TRUE)
+
 foreach (_Target IN LISTS _Targets)
 	# Get the type of the target.
 	get_target_property(_Type "${_Target}" TYPE)
 	# Only add linking options for target types that are linked.
 	if (_Type STREQUAL "EXECUTABLE" OR _Type STREQUAL "DYNAMIC_LIBRARY")
-		list(APPEND _ExecTargets "${_Target}")
+		if (NOT _Target IN_LIST _Tests)
+			list(APPEND _ExecTargets "${_Target}")
+		endif ()
 	endif ()
 endforeach ()
 
@@ -85,15 +89,17 @@ foreach (_ExecTarget IN LISTS _ExecTargets)
 	get_target_property(_OutputSuffix "${_ExecTarget}" SUFFIX)
 	# Each entry is is a combination of 2 items in the list executable first and then the shortcut name.
 	list(APPEND CPACK_PACKAGE_EXECUTABLES "${CPACK_PACKAGE_INSTALL_DIRECTORY}/${CMAKE_PROJECT_NAME}/${_OutputName}${_OutputSuffix}" "${_OutputName}")
-	if (_ExecTarget STREQUAL "cmd-pass")
-		foreach (_alias "np++" "ctl-panel")
-			install(PROGRAMS "$<TARGET_FILE:${_ExecTarget}>"
-				DESTINATION .
-				RENAME "${_alias}${_OutputSuffix}"
-				COMPONENT "${SF_DEFAULT_COMPONENT_NAME}"
-			)
-			list(APPEND CPACK_PACKAGE_EXECUTABLES "${CPACK_PACKAGE_INSTALL_DIRECTORY}/${CMAKE_PROJECT_NAME}/${_alias}${_OutputSuffix}" "${_alias}")
-		endforeach ()
+	if (SF_INCLUDE_SAMPLES)
+		if (_ExecTarget STREQUAL "cmd-pass")
+			foreach (_alias "np++" "ctl-panel")
+				install(PROGRAMS "$<TARGET_FILE:${_ExecTarget}>"
+					DESTINATION .
+					RENAME "${_alias}${_OutputSuffix}"
+					COMPONENT "${SF_DEFAULT_COMPONENT_NAME}"
+				)
+				list(APPEND CPACK_PACKAGE_EXECUTABLES "${CPACK_PACKAGE_INSTALL_DIRECTORY}/${CMAKE_PROJECT_NAME}/${_alias}${_OutputSuffix}" "${_alias}")
+			endforeach ()
+		endif ()
 	endif ()
 endforeach ()
 
